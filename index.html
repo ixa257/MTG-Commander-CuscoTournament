@@ -13,7 +13,7 @@
       --c-red:   #ff8b7b;
       --c-green: #7adf9b;
 
-      --bg: #3f4248;
+      --bg: #4b4f56;        /* un poquito más claro que antes */
       --card: #ffffff;
       --accent: #8fc5ff;
       --accent-soft: #e1f0ff;
@@ -131,6 +131,7 @@
       border-collapse: collapse;
       margin-top: 0.4rem;
       font-size: 0.9rem;
+      min-width: 600px; /* ayuda en mobile para que se active el scroll */
     }
 
     .table th, .table td {
@@ -144,6 +145,11 @@
       font-weight: 600;
     }
 
+    .table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+    }
+
     .badge {
       display: inline-block;
       padding: 0.1rem 0.5rem;
@@ -153,6 +159,11 @@
       color: var(--accent-strong);
       font-weight: 600;
       margin-left: 0.3rem;
+    }
+
+    #introText small {
+      color: var(--c-red); /* texto recordatorio en rojizo para mejor contraste */
+      font-weight: 500;
     }
 
     small {
@@ -221,6 +232,17 @@
       font-size: 0.8rem;
     }
 
+    .export-container {
+      margin-top: 0.6rem;
+    }
+
+    .export-container textarea {
+      width: 100%;
+      min-height: 120px;
+      font-family: monospace;
+      font-size: 0.8rem;
+    }
+
     @media (max-width: 600px) {
       .table th, .table td {
         font-size: 0.8rem;
@@ -231,10 +253,13 @@
 <body>
   <div class="container">
     <h1>Emparejador de Mesas – MTG Commander</h1>
-    <p><small>
-      Ingresa la lista de jugadores y el número de rondas. Se generarán mesas de 4 jugadores,  
-      intentando que <b>no se repitan demasiado los oponentes</b>. Puedes marcar ganadores/empates y llevar puntos y boosters.
-    </small></p>
+    <p id="introText">
+      <small>
+        Ingresa la lista de jugadores y el número de rondas. Se generarán mesas de 4 jugadores,
+        intentando que no se repitan demasiado los oponentes. Puedes marcar ganadores/empates
+        y llevar puntos y boosters.
+      </small>
+    </p>
 
     <div class="card">
       <div class="flex">
@@ -295,7 +320,11 @@ Fabián
       <div class="boosters-summary">
         Booster en pozo de la liga: <strong id="leaguePot">0</strong>
       </div>
+      <div style="margin-top:0.4rem;">
+        <button id="exportBtn" class="btn-secondary" type="button">Exportar resultados</button>
+      </div>
       <div id="scores"></div>
+      <div id="exportContainer" class="export-container"></div>
     </div>
   </div>
 
@@ -439,14 +468,12 @@ Fabián
       }
 
       // Calcular quiénes quedan fuera para mantener solo mesas de 4
-      // 1) excluir mesa tardía de la parte "regular"
       const rest = players.filter(p => !latePlayers.includes(p));
       const remainder = rest.length % 4;
       lastExtras = [];
 
       if (remainder !== 0) {
-        // los últimos en la lista de inscripción que no están en mesa tardía
-        const restOrdered = players.filter(p => !latePlayers.includes(p)); // ya lo tenemos
+        const restOrdered = players.filter(p => !latePlayers.includes(p));
         lastExtras = restOrdered.slice(restOrdered.length - remainder);
       }
 
@@ -474,6 +501,7 @@ Fabián
       document.getElementById('leaguePot').textContent = '0';
       document.getElementById('extraPlayersMessage').innerHTML = '';
       document.getElementById('roundSuggestion').innerHTML = '';
+      document.getElementById('exportContainer').innerHTML = '';
       try {
         localStorage.removeItem(STORAGE_KEY);
       } catch (e) {}
@@ -492,7 +520,6 @@ Fabián
         if (r === 0 && latePlayers && latePlayers.length === 4) {
           // Mesa tardía fija
           roundPods.push([...latePlayers]);
-          // actualizar pairCounts
           for (let i = 0; i < latePlayers.length; i++) {
             for (let j = i + 1; j < latePlayers.length; j++) {
               const key = getKey(latePlayers[i], latePlayers[j]);
@@ -508,15 +535,12 @@ Fabián
 
         while (remaining.length > 0) {
           if (remaining.length < 4) {
-            // Esto no debería pasar porque ya controlamos múltiplos de 4 (sin contar mesa tardía),
-            // pero por seguridad, rompemos el bucle.
             break;
           }
 
           const bestGroup = findBestGroup(remaining, 4, pairCounts, getKey);
           roundPods.push(bestGroup);
 
-          // actualizar pairCounts
           for (let i = 0; i < bestGroup.length; i++) {
             for (let j = i + 1; j < bestGroup.length; j++) {
               const key = getKey(bestGroup[i], bestGroup[j]);
@@ -524,7 +548,6 @@ Fabián
             }
           }
 
-          // quitar del remaining
           for (const p of bestGroup) {
             const idx = remaining.indexOf(p);
             if (idx !== -1) remaining.splice(idx, 1);
@@ -575,6 +598,65 @@ Fabián
       }
     }
 
+    // --------------- CÁLCULO DE STATS & POT ---------------
+
+    function computeStatsAndPot() {
+      const stats = {};
+      let leaguePot = 0;
+
+      if (!globalRounds.length) {
+        return { stats, leaguePot };
+      }
+
+      // Inicializar
+      globalRounds.forEach(roundPods => {
+        roundPods.forEach(pod => {
+          pod.forEach(player => {
+            if (!stats[player]) {
+              stats[player] = {
+                player,
+                wins: 0,
+                draws: 0,
+                losses: 0,
+                games: 0,
+                points: 0,
+                boosters: 0
+              };
+            }
+          });
+        });
+      });
+
+      // Procesar resultados
+      globalRounds.forEach((roundPods, rIndex) => {
+        roundPods.forEach((pod, pIndex) => {
+          const result = globalWinners[rIndex]?.[pIndex] || '';
+          if (!result) return;
+
+          if (result === '__EMPATE__') {
+            pod.forEach(player => {
+              stats[player].games += 1;
+              stats[player].draws += 1;
+            });
+            leaguePot += 1;
+          } else {
+            pod.forEach(player => {
+              stats[player].games += 1;
+              if (player === result) {
+                stats[player].wins += 1;
+                stats[player].points += 1;   // 1 punto por victoria
+                stats[player].boosters += 1; // 1 booster por victoria
+              } else {
+                stats[player].losses += 1;
+              }
+            });
+          }
+        });
+      });
+
+      return { stats, leaguePot };
+    }
+
     // --------------- RENDER EMPAREJAMIENTOS ---------------
 
     function renderPairings() {
@@ -604,6 +686,9 @@ Fabián
         const title = document.createElement('h3');
         title.textContent = `Ronda ${rIndex + 1}`;
         roundDiv.appendChild(title);
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'table-wrapper';
 
         const table = document.createElement('table');
         table.className = 'table';
@@ -667,7 +752,8 @@ Fabián
         });
 
         table.appendChild(tbody);
-        roundDiv.appendChild(table);
+        wrapper.appendChild(table);
+        roundDiv.appendChild(wrapper);
         container.appendChild(roundDiv);
       });
     }
@@ -678,61 +764,13 @@ Fabián
       const container = document.getElementById('scores');
       container.innerHTML = '';
 
-      let leaguePot = 0;
+      const { stats, leaguePot } = computeStatsAndPot();
 
-      if (!globalRounds.length) {
+      if (!globalRounds.length || Object.keys(stats).length === 0) {
         container.innerHTML = '<p><small>No hay rondas aún.</small></p>';
         document.getElementById('leaguePot').textContent = '0';
         return;
       }
-
-      const stats = {};
-
-      // Inicializar
-      globalRounds.forEach(roundPods => {
-        roundPods.forEach(pod => {
-          pod.forEach(player => {
-            if (!stats[player]) {
-              stats[player] = {
-                player,
-                wins: 0,
-                draws: 0,
-                losses: 0,
-                games: 0,
-                points: 0,
-                boosters: 0
-              };
-            }
-          });
-        });
-      });
-
-      // Procesar resultados
-      globalRounds.forEach((roundPods, rIndex) => {
-        roundPods.forEach((pod, pIndex) => {
-          const result = globalWinners[rIndex]?.[pIndex] || '';
-          if (!result) return;
-
-          if (result === '__EMPATE__') {
-            pod.forEach(player => {
-              stats[player].games += 1;
-              stats[player].draws += 1;
-            });
-            leaguePot += 1;
-          } else {
-            pod.forEach(player => {
-              stats[player].games += 1;
-              if (player === result) {
-                stats[player].wins += 1;
-                stats[player].points += 1;   // 1 punto por victoria
-                stats[player].boosters += 1; // 1 booster por victoria
-              } else {
-                stats[player].losses += 1;
-              }
-            });
-          }
-        });
-      });
 
       document.getElementById('leaguePot').textContent = leaguePot.toString();
 
@@ -742,6 +780,9 @@ Fabián
         if (b.wins !== a.wins) return b.wins - a.wins;
         return a.player.localeCompare(b.player);
       });
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'table-wrapper';
 
       const table = document.createElement('table');
       table.className = 'table';
@@ -779,8 +820,53 @@ Fabián
       });
 
       table.appendChild(tbody);
-      container.appendChild(table);
+      wrapper.appendChild(table);
+      container.appendChild(wrapper);
     }
+
+    // --------------- EXPORTAR RESULTADOS ---------------
+
+    document.getElementById('exportBtn').addEventListener('click', () => {
+      const exportContainer = document.getElementById('exportContainer');
+      exportContainer.innerHTML = '';
+
+      const { stats, leaguePot } = computeStatsAndPot();
+
+      if (!globalRounds.length || Object.keys(stats).length === 0) {
+        exportContainer.innerHTML = '<p><small>No hay datos para exportar.</small></p>';
+        return;
+      }
+
+      const rows = Object.values(stats);
+      rows.sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        if (b.wins !== a.wins) return b.wins - a.wins;
+        return a.player.localeCompare(b.player);
+      });
+
+      let csv = 'Jugador,Puntos,Victorias,Empates,Derrotas,Partidas,BoostersGanados\n';
+      rows.forEach(st => {
+        csv += [
+          `"${st.player.replace(/"/g, '""')}"`,
+          st.points,
+          st.wins,
+          st.draws,
+          st.losses,
+          st.games,
+          st.boosters
+        ].join(',') + '\n';
+      });
+      csv += `PozoLigaBoosters,${leaguePot}\n`;
+
+      const label = document.createElement('p');
+      label.innerHTML = '<small>Resultados en formato CSV (copia y pega en Excel / Google Sheets):</small>';
+      exportContainer.appendChild(label);
+
+      const ta = document.createElement('textarea');
+      ta.value = csv;
+      exportContainer.appendChild(ta);
+      ta.select();
+    });
 
     // --------------- INIT ---------------
 
