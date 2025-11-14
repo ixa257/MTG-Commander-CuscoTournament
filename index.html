@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Emparejador Commander</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --card: #ffffff;
+      --accent: #ff9ac5;
+      --accent-soft: #ffe3f0;
+      --accent-strong: #ff6fa8;
+      --text: #333;
+      --text-soft: #666;
+      --border: #ddd;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      padding: 1rem;
+    }
+
+    h1, h2, h3 {
+      margin-top: 0;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      border: 1px solid rgba(0,0,0,0.03);
+    }
+
+    .flex {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .flex > div {
+      flex: 1 1 250px;
+      min-width: 220px;
+    }
+
+    textarea, input, select {
+      width: 100%;
+      padding: 0.45rem 0.6rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 0.95rem;
+      resize: vertical;
+    }
+
+    label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 0.5rem 1.2rem;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: white;
+      box-shadow: 0 6px 16px rgba(255, 111, 168, 0.4);
+      transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+      margin-top: 0.4rem;
+    }
+
+    button:hover {
+      filter: brightness(1.05);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(255, 111, 168, 0.45);
+    }
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 4px 10px rgba(255, 111, 168, 0.3);
+    }
+
+    .round-card {
+      border-left: 4px solid var(--accent);
+      margin-bottom: 0.8rem;
+      padding-left: 0.8rem;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.4rem;
+      font-size: 0.9rem;
+    }
+
+    .table th, .table td {
+      border: 1px solid var(--border);
+      padding: 0.3rem 0.4rem;
+      text-align: left;
+    }
+
+    .table th {
+      background: var(--accent-soft);
+      font-weight: 600;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.1rem 0.5rem;
+      font-size: 0.75rem;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+      font-weight: 600;
+      margin-left: 0.3rem;
+    }
+
+    small {
+      color: var(--text-soft);
+      font-size: 0.8rem;
+    }
+
+    .winner-select {
+      width: 100%;
+      padding: 0.25rem 0.4rem;
+      font-size: 0.8rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+
+    .scores-note {
+      font-size: 0.8rem;
+      color: var(--text-soft);
+      margin-top: 0.25rem;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 0.1rem 0.5rem;
+      border-radius: 999px;
+      background: #e3f2fd;
+      color: #1565c0;
+      font-size: 0.75rem;
+      margin-left: 0.3rem;
+    }
+
+    @media (max-width: 600px) {
+      .table th, .table td {
+        font-size: 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Emparejador de Mesas – MTG Commander</h1>
+    <p><small>
+      Ingresa la lista de jugadores y el número de rondas. Se generarán mesas de 4 (a veces de 3 si no alcanza justo),
+      intentando que <b>no se repitan demasiado los oponentes</b>. Luego puedes marcar ganadores/empates y ver la tabla de puntuación.
+    </small></p>
+
+    <div class="card">
+      <div class="flex">
+        <div>
+          <label for="playersInput">Jugadores <small>(uno por línea)</small></label>
+          <textarea id="playersInput" rows="8" placeholder="Ejemplo:
+Alice
+Bob
+Carlos
+Diana
+Edu
+Fabián
+..."></textarea>
+          <small>Recomendado entre 4 y 20 jugadores.</small>
+        </div>
+        <div>
+          <label for="roundsInput">Cantidad de rondas</label>
+          <input type="number" id="roundsInput" min="1" max="12" value="3" />
+          <small>Entre más rondas, más chances de que todos jueguen entre sí. 3–5 suele ir bien.</small>
+          <br />
+          <button id="generateBtn">Generar emparejamientos</button>
+          <p class="scores-note">
+            Algoritmo: intenta minimizar repeticiones de parejas en cada mesa, pero no es perfecto al 100%.  
+            Siempre puedes ajustar alguna mesa a mano si quieres.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Rondas y mesas <span class="badge">Emparejamientos</span></h2>
+      <div id="pairings"></div>
+    </div>
+
+    <div class="card">
+      <h2>Tabla de puntuación <span class="badge">Scores</span></h2>
+      <p class="scores-note">
+        Sistema de puntos:
+        <span class="pill">Victoria: 3 pts</span>
+        <span class="pill">Empate: 1 pt (cada jugador)</span>
+        <span class="pill">Derrota: 0 pts</span>
+      </p>
+      <div id="scores"></div>
+    </div>
+  </div>
+
+  <script>
+    // ------------------ LÓGICA DE EMPAREJAMIENTOS ------------------
+
+    let globalRounds = []; // [ [ [playersMesa1], [playersMesa2], ... ], ... ]
+    let globalWinners = []; // mismo shape, guardando "ganador" o "EMPATE" o ""
+
+    document.getElementById('generateBtn').addEventListener('click', () => {
+      const playersRaw = document.getElementById('playersInput').value
+        .split('\n')
+        .map(p => p.trim())
+        .filter(p => p.length > 0);
+
+      const rounds = parseInt(document.getElementById('roundsInput').value, 10);
+
+      if (playersRaw.length < 4) {
+        alert('Necesitas al menos 4 jugadores.');
+        return;
+      }
+      if (isNaN(rounds) || rounds < 1) {
+        alert('Indica una cantidad válida de rondas.');
+        return;
+      }
+
+      const players = Array.from(new Set(playersRaw)); // eliminar duplicados por si acaso
+
+      globalRounds = generateAllRounds(players, rounds);
+      globalWinners = globalRounds.map(round =>
+        round.map(() => "") // sin ganador al inicio
+      );
+
+      renderPairings();
+      renderScores();
+    });
+
+    function generateAllRounds(players, rounds) {
+      const pairCounts = {}; // "A|B" -> veces que se enfrentaron
+      const allRounds = [];
+
+      const getKey = (a, b) => {
+        return a < b ? a + '|' + b : b + '|' + a;
+      };
+
+      for (let r = 0; r < rounds; r++) {
+        // Copia y barajado de jugadores
+        let remaining = [...players];
+        remaining.sort(() => Math.random() - 0.5);
+
+        const roundPods = [];
+
+        while (remaining.length > 0) {
+          let groupSize = 4;
+
+          if (remaining.length === 3) {
+            groupSize = 3;
+          } else if (remaining.length < 3) {
+            // Si quedan 1 o 2, los metemos en la última mesa formada
+            if (roundPods.length > 0) {
+              const lastPod = roundPods[roundPods.length - 1];
+              while (remaining.length > 0) {
+                lastPod.push(remaining.shift());
+              }
+            } else {
+              // caso extremo: muy poca gente, dejamos lo que quede
+              groupSize = remaining.length;
+            }
+            break;
+          }
+
+          const bestGroup = findBestGroup(remaining, groupSize, pairCounts, getKey);
+
+          roundPods.push(bestGroup);
+
+          // actualizar pairCounts
+          for (let i = 0; i < bestGroup.length; i++) {
+            for (let j = i + 1; j < bestGroup.length; j++) {
+              const key = getKey(bestGroup[i], bestGroup[j]);
+              pairCounts[key] = (pairCounts[key] || 0) + 1;
+            }
+          }
+
+          // eliminar elegidos de remaining
+          for (const p of bestGroup) {
+            const idx = remaining.indexOf(p);
+            if (idx !== -1) remaining.splice(idx, 1);
+          }
+        }
+
+        allRounds.push(roundPods);
+      }
+
+      return allRounds;
+    }
+
+    function findBestGroup(remaining, groupSize, pairCounts, getKey) {
+      const indices = remaining.map((_, i) => i);
+      const combos = [];
+      generateCombinations(indices, groupSize, 0, [], combos);
+
+      let best = null;
+      let bestScore = Infinity;
+
+      for (const combo of combos) {
+        const group = combo.map(i => remaining[i]);
+        let score = 0;
+        for (let i = 0; i < group.length; i++) {
+          for (let j = i + 1; j < group.length; j++) {
+            const key = getKey(group[i], group[j]);
+            score += (pairCounts[key] || 0);
+          }
+        }
+        if (score < bestScore) {
+          bestScore = score;
+          best = group;
+        }
+      }
+
+      return best || remaining.slice(0, groupSize);
+    }
+
+    function generateCombinations(arr, k, start, path, result) {
+      if (path.length === k) {
+        result.push([...path]);
+        return;
+      }
+      for (let i = start; i < arr.length; i++) {
+        path.push(arr[i]);
+        generateCombinations(arr, k, i + 1, path, result);
+        path.pop();
+      }
+    }
+
+    // ------------------ RENDER DE EMPAREJAMIENTOS ------------------
+
+    function renderPairings() {
+      const container = document.getElementById('pairings');
+      container.innerHTML = '';
+
+      if (!globalRounds.length) {
+        container.innerHTML = '<p><small>Aún no se han generado rondas.</small></p>';
+        return;
+      }
+
+      globalRounds.forEach((roundPods, rIndex) => {
+        const roundDiv = document.createElement('div');
+        roundDiv.className = 'round-card';
+
+        const title = document.createElement('h3');
+        title.textContent = `Ronda ${rIndex + 1}`;
+        roundDiv.appendChild(title);
+
+        const table = document.createElement('table');
+        table.className = 'table';
+
+        const thead = document.createElement('thead');
+        thead.innerHTML = `
+          <tr>
+            <th>Mesa</th>
+            <th>Jugadores</th>
+            <th>Ganador / Empate</th>
+          </tr>
+        `;
+        table.appendChild(thead);
+
+        const tbody = document.createElement('tbody');
+
+        roundPods.forEach((pod, pIndex) => {
+          const tr = document.createElement('tr');
+
+          const tdMesa = document.createElement('td');
+          tdMesa.textContent = pIndex + 1;
+
+          const tdPlayers = document.createElement('td');
+          tdPlayers.textContent = pod.join(', ');
+
+          const tdWinner = document.createElement('td');
+          const select = document.createElement('select');
+          select.className = 'winner-select';
+
+          const emptyOpt = document.createElement('option');
+          emptyOpt.value = '';
+          emptyOpt.textContent = '— sin definir —';
+          select.appendChild(emptyOpt);
+
+          const tieOpt = document.createElement('option');
+          tieOpt.value = '__EMPATE__';
+          tieOpt.textContent = 'Empate entre todos';
+          select.appendChild(tieOpt);
+
+          pod.forEach(player => {
+            const opt = document.createElement('option');
+            opt.value = player;
+            opt.textContent = player;
+            select.appendChild(opt);
+          });
+
+          select.value = globalWinners[rIndex][pIndex] || '';
+          select.addEventListener('change', () => {
+            globalWinners[rIndex][pIndex] = select.value;
+            renderScores();
+          });
+
+          tdWinner.appendChild(select);
+
+          tr.appendChild(tdMesa);
+          tr.appendChild(tdPlayers);
+          tr.appendChild(tdWinner);
+
+          tbody.appendChild(tr);
+        });
+
+        table.appendChild(tbody);
+        roundDiv.appendChild(table);
+        container.appendChild(roundDiv);
+      });
+    }
+
+    // ------------------ TABLA DE PUNTUACIÓN ------------------
+
+    function renderScores() {
+      const container = document.getElementById('scores');
+      container.innerHTML = '';
+
+      if (!globalRounds.length) {
+        container.innerHTML = '<p><small>No hay rondas aún.</small></p>';
+        return;
+      }
+
+      // construir stats
+      const stats = {};
+
+      // Inicializar stats con todos los jugadores que aparecen en las rondas
+      globalRounds.forEach(roundPods => {
+        roundPods.forEach(pod => {
+          pod.forEach(player => {
+            if (!stats[player]) {
+              stats[player] = {
+                player,
+                wins: 0,
+                draws: 0,
+                losses: 0,
+                games: 0,
+                points: 0
+              };
+            }
+          });
+        });
+      });
+
+      // Procesar resultados
+      globalRounds.forEach((roundPods, rIndex) => {
+        roundPods.forEach((pod, pIndex) => {
+          const result = globalWinners[rIndex]?.[pIndex] || '';
+          if (!result) return;
+
+          if (result === '__EMPATE__') {
+            // todos empatados
+            pod.forEach(player => {
+              stats[player].draws += 1;
+              stats[player].games += 1;
+              stats[player].points += 1;
+            });
+          } else {
+            // hay un ganador
+            pod.forEach(player => {
+              stats[player].games += 1;
+              if (player === result) {
+                stats[player].wins += 1;
+                stats[player].points += 3;
+              } else {
+                stats[player].losses += 1;
+              }
+            });
+          }
+        });
+      });
+
+      const rows = Object.values(stats);
+      rows.sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        if (b.wins !== a.wins) return b.wins - a.wins;
+        return a.player.localeCompare(b.player);
+      });
+
+      const table = document.createElement('table');
+      table.className = 'table';
+
+      const thead = document.createElement('thead');
+      thead.innerHTML = `
+        <tr>
+          <th>#</th>
+          <th>Jugador</th>
+          <th>Puntos</th>
+          <th>Victorias</th>
+          <th>Empates</th>
+          <th>Derrotas</th>
+          <th>Partidas</th>
+        </tr>
+      `;
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+
+      rows.forEach((st, index) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${st.player}</td>
+          <td>${st.points}</td>
+          <td>${st.wins}</td>
+          <td>${st.draws}</td>
+          <td>${st.losses}</td>
+          <td>${st.games}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+      container.appendChild(table);
+    }
+  </script>
+</body>
+</html>
