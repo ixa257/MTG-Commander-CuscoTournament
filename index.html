@@ -6,13 +6,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
-      --bg: #f6f7fb;
+      /* Paleta inspirada en los 5 colores de MTG */
+      --c-white: #f8f5e7;
+      --c-blue:  #8fc5ff;
+      --c-black: #2b2b2b;
+      --c-red:   #ff8b7b;
+      --c-green: #7adf9b;
+
+      --bg: #f3f5fa;
       --card: #ffffff;
-      --accent: #ff9ac5;
-      --accent-soft: #ffe3f0;
-      --accent-strong: #ff6fa8;
-      --text: #333;
-      --text-soft: #666;
+      --accent: #8fc5ff;
+      --accent-soft: #e1f0ff;
+      --accent-strong: #ff8b7b;
+      --text: #222;
+      --text-soft: #555;
       --border: #ddd;
     }
 
@@ -23,13 +30,21 @@
 
     body {
       margin: 0;
-      background: var(--bg);
+      background: radial-gradient(circle at top left, var(--c-white), var(--bg)),
+                  radial-gradient(circle at bottom right, var(--c-green), var(--bg));
       color: var(--text);
       padding: 1rem;
     }
 
     h1, h2, h3 {
       margin-top: 0;
+    }
+
+    h1 {
+      background: linear-gradient(90deg, var(--c-white), var(--c-blue), var(--c-black), var(--c-red), var(--c-green));
+      -webkit-background-clip: text;
+      color: transparent;
+      font-weight: 800;
     }
 
     .container {
@@ -43,7 +58,7 @@
       padding: 1rem 1.2rem;
       margin-bottom: 1rem;
       box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-      border: 1px solid rgba(0,0,0,0.03);
+      border: 1px solid rgba(0,0,0,0.06);
     }
 
     .flex {
@@ -64,6 +79,7 @@
       border: 1px solid var(--border);
       font-size: 0.95rem;
       resize: vertical;
+      background: #fafbff;
     }
 
     label {
@@ -80,26 +96,30 @@
       cursor: pointer;
       font-weight: 600;
       font-size: 0.95rem;
-      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-      color: white;
-      box-shadow: 0 6px 16px rgba(255, 111, 168, 0.4);
+      background: linear-gradient(135deg, var(--c-blue), var(--c-green));
+      color: #111;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.12);
       transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
       margin-top: 0.4rem;
     }
 
     button:hover {
-      filter: brightness(1.05);
+      filter: brightness(1.03);
       transform: translateY(-1px);
-      box-shadow: 0 8px 20px rgba(255, 111, 168, 0.45);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.18);
     }
 
     button:active {
       transform: translateY(0);
-      box-shadow: 0 4px 10px rgba(255, 111, 168, 0.3);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #eeeeee, #cccccc);
     }
 
     .round-card {
-      border-left: 4px solid var(--accent);
+      border-left: 4px solid var(--accent-strong);
       margin-bottom: 0.8rem;
       padding-left: 0.8rem;
     }
@@ -118,7 +138,7 @@
     }
 
     .table th {
-      background: var(--accent-soft);
+      background: linear-gradient(90deg, var(--c-white), var(--accent-soft));
       font-weight: 600;
     }
 
@@ -144,6 +164,7 @@
       font-size: 0.8rem;
       border-radius: 6px;
       border: 1px solid var(--border);
+      background: #fdfdff;
     }
 
     .scores-note {
@@ -162,6 +183,21 @@
       margin-left: 0.3rem;
     }
 
+    .pill-red {
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    .pill-green {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .boosters-summary {
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+    }
+
     @media (max-width: 600px) {
       .table th, .table td {
         font-size: 0.8rem;
@@ -173,8 +209,9 @@
   <div class="container">
     <h1>Emparejador de Mesas – MTG Commander</h1>
     <p><small>
-      Ingresa la lista de jugadores y el número de rondas. Se generarán mesas de 4 (a veces de 3 si no alcanza justo),
-      intentando que <b>no se repitan demasiado los oponentes</b>. Luego puedes marcar ganadores/empates y ver la tabla de puntuación.
+      Ingresa la lista de jugadores y el número de rondas. Se generarán mesas de 4 (a veces de 3),
+      intentando que <b>no se repitan demasiado los oponentes</b>. Luego marca el ganador o empate
+      para llevar la puntuación y boosters.
     </small></p>
 
     <div class="card">
@@ -194,12 +231,13 @@ Fabián
         <div>
           <label for="roundsInput">Cantidad de rondas</label>
           <input type="number" id="roundsInput" min="1" max="12" value="3" />
-          <small>Entre más rondas, más chances de que todos jueguen entre sí. 3–5 suele ir bien.</small>
+          <small>3–5 rondas funciona muy bien para pods de Commander.</small>
           <br />
           <button id="generateBtn">Generar emparejamientos</button>
+          <button id="resetBtn" class="btn-secondary">Resetear todo</button>
           <p class="scores-note">
             Algoritmo: intenta minimizar repeticiones de parejas en cada mesa, pero no es perfecto al 100%.  
-            Siempre puedes ajustar alguna mesa a mano si quieres.
+            Siempre puedes ajustar alguna mesa a mano (editando los nombres directamente en el texto de jugadores y regenerando).
           </p>
         </div>
       </div>
@@ -211,22 +249,69 @@ Fabián
     </div>
 
     <div class="card">
-      <h2>Tabla de puntuación <span class="badge">Scores</span></h2>
+      <h2>Tabla de puntuación <span class="badge">Scores & Boosters</span></h2>
       <p class="scores-note">
         Sistema de puntos:
-        <span class="pill">Victoria: 3 pts</span>
-        <span class="pill">Empate: 1 pt (cada jugador)</span>
-        <span class="pill">Derrota: 0 pts</span>
+        <span class="pill pill-green">Victoria: 1 punto</span>
+        <span class="pill pill-red">Empate o derrota: 0 puntos</span>
       </p>
+      <p class="scores-note">
+        Boosters:
+        <span class="pill pill-green">Cada victoria = 1 booster para ese jugador</span>
+        <span class="pill pill-red">Empate = 1 booster al pozo de la liga</span>
+      </p>
+      <div class="boosters-summary">
+        Booster en pozo de la liga: <strong id="leaguePot">0</strong>
+      </div>
       <div id="scores"></div>
     </div>
   </div>
 
   <script>
-    // ------------------ LÓGICA DE EMPAREJAMIENTOS ------------------
+    // ------------------ ESTADO GLOBAL & PERSISTENCIA ------------------
 
-    let globalRounds = []; // [ [ [playersMesa1], [playersMesa2], ... ], ... ]
-    let globalWinners = []; // mismo shape, guardando "ganador" o "EMPATE" o ""
+    let globalRounds = [];   // [ [ [playersMesa1], [playersMesa2], ... ], ... ]
+    let globalWinners = [];  // misma forma, guarda ganador o "__EMPATE__" o ""
+    const STORAGE_KEY = 'commander_pairings_v2';
+
+    function saveState() {
+      try {
+        const playersRaw = document.getElementById('playersInput').value;
+        const rounds = document.getElementById('roundsInput').value;
+        const data = {
+          playersRaw,
+          rounds: parseInt(rounds, 10),
+          globalRounds,
+          globalWinners
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      } catch (e) {
+        console.warn('No se pudo guardar el estado:', e);
+      }
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (!data || !Array.isArray(data.globalRounds)) return;
+
+        document.getElementById('playersInput').value = data.playersRaw || '';
+        if (data.rounds) {
+          document.getElementById('roundsInput').value = data.rounds;
+        }
+
+        globalRounds = data.globalRounds;
+        globalWinners = data.globalWinners || globalRounds.map(r => r.map(() => ""));
+        renderPairings();
+        renderScores();
+      } catch (e) {
+        console.warn('No se pudo cargar el estado:', e);
+      }
+    }
+
+    // ------------------ GENERACIÓN DE RONDAS ------------------
 
     document.getElementById('generateBtn').addEventListener('click', () => {
       const playersRaw = document.getElementById('playersInput').value
@@ -245,7 +330,7 @@ Fabián
         return;
       }
 
-      const players = Array.from(new Set(playersRaw)); // eliminar duplicados por si acaso
+      const players = Array.from(new Set(playersRaw)); // quitar duplicados
 
       globalRounds = generateAllRounds(players, rounds);
       globalWinners = globalRounds.map(round =>
@@ -254,6 +339,22 @@ Fabián
 
       renderPairings();
       renderScores();
+      saveState();
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      if (!confirm('¿Seguro que quieres resetear todo? Se perderán emparejamientos, resultados y boosters.')) return;
+
+      globalRounds = [];
+      globalWinners = [];
+      document.getElementById('playersInput').value = '';
+      document.getElementById('roundsInput').value = 3;
+      document.getElementById('pairings').innerHTML = '<p><small>Aún no se han generado rondas.</small></p>';
+      document.getElementById('scores').innerHTML = '<p><small>No hay datos de puntuación.</small></p>';
+      document.getElementById('leaguePot').textContent = '0';
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (e) {}
     });
 
     function generateAllRounds(players, rounds) {
@@ -265,7 +366,6 @@ Fabián
       };
 
       for (let r = 0; r < rounds; r++) {
-        // Copia y barajado de jugadores
         let remaining = [...players];
         remaining.sort(() => Math.random() - 0.5);
 
@@ -277,14 +377,13 @@ Fabián
           if (remaining.length === 3) {
             groupSize = 3;
           } else if (remaining.length < 3) {
-            // Si quedan 1 o 2, los metemos en la última mesa formada
+            // Si quedan 1 o 2, se agregan a la última mesa
             if (roundPods.length > 0) {
               const lastPod = roundPods[roundPods.length - 1];
               while (remaining.length > 0) {
                 lastPod.push(remaining.shift());
               }
             } else {
-              // caso extremo: muy poca gente, dejamos lo que quede
               groupSize = remaining.length;
             }
             break;
@@ -294,7 +393,7 @@ Fabián
 
           roundPods.push(bestGroup);
 
-          // actualizar pairCounts
+          // actualizar par enfrentado
           for (let i = 0; i < bestGroup.length; i++) {
             for (let j = i + 1; j < bestGroup.length; j++) {
               const key = getKey(bestGroup[i], bestGroup[j]);
@@ -302,7 +401,7 @@ Fabián
             }
           }
 
-          // eliminar elegidos de remaining
+          // quitar del remaining
           for (const p of bestGroup) {
             const idx = remaining.indexOf(p);
             if (idx !== -1) remaining.splice(idx, 1);
@@ -421,6 +520,7 @@ Fabián
           select.addEventListener('change', () => {
             globalWinners[rIndex][pIndex] = select.value;
             renderScores();
+            saveState();
           });
 
           tdWinner.appendChild(select);
@@ -438,21 +538,24 @@ Fabián
       });
     }
 
-    // ------------------ TABLA DE PUNTUACIÓN ------------------
+    // ------------------ TABLA DE PUNTUACIÓN & BOOSTERS ------------------
 
     function renderScores() {
       const container = document.getElementById('scores');
       container.innerHTML = '';
 
+      let leaguePot = 0;
+
       if (!globalRounds.length) {
         container.innerHTML = '<p><small>No hay rondas aún.</small></p>';
+        document.getElementById('leaguePot').textContent = '0';
         return;
       }
 
-      // construir stats
+      // stats por jugador
       const stats = {};
 
-      // Inicializar stats con todos los jugadores que aparecen en las rondas
+      // Inicializar stats
       globalRounds.forEach(roundPods => {
         roundPods.forEach(pod => {
           pod.forEach(player => {
@@ -463,33 +566,38 @@ Fabián
                 draws: 0,
                 losses: 0,
                 games: 0,
-                points: 0
+                points: 0,
+                boosters: 0
               };
             }
           });
         });
       });
 
-      // Procesar resultados
+      // Procesar resultados con la lógica nueva:
+      // Ganador: +1 punto, +1 booster
+      // Empate: 0 puntos para todos, +1 booster al pozo
+      // Derrota: 0 puntos
       globalRounds.forEach((roundPods, rIndex) => {
         roundPods.forEach((pod, pIndex) => {
           const result = globalWinners[rIndex]?.[pIndex] || '';
           if (!result) return;
 
           if (result === '__EMPATE__') {
-            // todos empatados
+            // Todos juegan una partida, nadie gana punto, 1 booster al pozo
             pod.forEach(player => {
-              stats[player].draws += 1;
               stats[player].games += 1;
-              stats[player].points += 1;
+              stats[player].draws += 1; // puedes interpretarlo como "empate" para registro
             });
+            leaguePot += 1;
           } else {
-            // hay un ganador
+            // Hay un ganador
             pod.forEach(player => {
               stats[player].games += 1;
               if (player === result) {
                 stats[player].wins += 1;
-                stats[player].points += 3;
+                stats[player].points += 1;   // 1 punto por victoria
+                stats[player].boosters += 1; // 1 booster por victoria
               } else {
                 stats[player].losses += 1;
               }
@@ -497,6 +605,8 @@ Fabián
           }
         });
       });
+
+      document.getElementById('leaguePot').textContent = leaguePot.toString();
 
       const rows = Object.values(stats);
       rows.sort((a, b) => {
@@ -518,6 +628,7 @@ Fabián
           <th>Empates</th>
           <th>Derrotas</th>
           <th>Partidas</th>
+          <th>Boosters ganados</th>
         </tr>
       `;
       table.appendChild(thead);
@@ -534,6 +645,7 @@ Fabián
           <td>${st.draws}</td>
           <td>${st.losses}</td>
           <td>${st.games}</td>
+          <td>${st.boosters}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -541,6 +653,16 @@ Fabián
       table.appendChild(tbody);
       container.appendChild(table);
     }
+
+    // ------------------ INIT ------------------
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadState();
+      if (!globalRounds.length) {
+        document.getElementById('pairings').innerHTML = '<p><small>Aún no se han generado rondas.</small></p>';
+        document.getElementById('scores').innerHTML = '<p><small>No hay datos de puntuación.</small></p>';
+      }
+    });
   </script>
 </body>
 </html>
