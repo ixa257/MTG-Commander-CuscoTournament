@@ -13,14 +13,14 @@
       --c-red:   #ff8b7b;
       --c-green: #7adf9b;
 
-      --bg: #f3f5fa;
+      --bg: #3f4248;
       --card: #ffffff;
       --accent: #8fc5ff;
       --accent-soft: #e1f0ff;
       --accent-strong: #ff8b7b;
-      --text: #222;
-      --text-soft: #555;
-      --border: #ddd;
+      --text: #f5f5f5;
+      --text-soft: #cccccc;
+      --border: #444;
     }
 
     * {
@@ -30,8 +30,7 @@
 
     body {
       margin: 0;
-      background: radial-gradient(circle at top left, var(--c-white), var(--bg)),
-                  radial-gradient(circle at bottom right, var(--c-green), var(--bg));
+      background: var(--bg);
       color: var(--text);
       padding: 1rem;
     }
@@ -54,11 +53,12 @@
 
     .card {
       background: var(--card);
+      color: #222;
       border-radius: 14px;
       padding: 1rem 1.2rem;
       margin-bottom: 1rem;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-      border: 1px solid rgba(0,0,0,0.06);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      border: 1px solid rgba(0,0,0,0.4);
     }
 
     .flex {
@@ -79,7 +79,7 @@
       border: 1px solid var(--border);
       font-size: 0.95rem;
       resize: vertical;
-      background: #fafbff;
+      background: #f7f7fa;
     }
 
     label {
@@ -98,7 +98,7 @@
       font-size: 0.95rem;
       background: linear-gradient(135deg, var(--c-blue), var(--c-green));
       color: #111;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.25);
       transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
       margin-top: 0.4rem;
     }
@@ -106,16 +106,18 @@
     button:hover {
       filter: brightness(1.03);
       transform: translateY(-1px);
-      box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.35);
     }
 
     button:active {
       transform: translateY(0);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
     }
 
     .btn-secondary {
       background: linear-gradient(135deg, #eeeeee, #cccccc);
+      color: #222;
+      margin-left: 0.3rem;
     }
 
     .round-card {
@@ -132,7 +134,7 @@
     }
 
     .table th, .table td {
-      border: 1px solid var(--border);
+      border: 1px solid #ddd;
       padding: 0.3rem 0.4rem;
       text-align: left;
     }
@@ -154,7 +156,7 @@
     }
 
     small {
-      color: var(--text-soft);
+      color: #555;
       font-size: 0.8rem;
     }
 
@@ -169,7 +171,7 @@
 
     .scores-note {
       font-size: 0.8rem;
-      color: var(--text-soft);
+      color: #555;
       margin-top: 0.25rem;
     }
 
@@ -198,6 +200,27 @@
       font-size: 0.85rem;
     }
 
+    .warning {
+      font-size: 0.85rem;
+      color: #b71c1c;
+      background: #ffebee;
+      border-radius: 8px;
+      padding: 0.4rem 0.6rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .round-suggestion {
+      font-size: 0.8rem;
+      margin-top: 0.35rem;
+      color: #333;
+    }
+
+    .round-suggestion button {
+      margin-top: 0.3rem;
+      padding: 0.25rem 0.7rem;
+      font-size: 0.8rem;
+    }
+
     @media (max-width: 600px) {
       .table th, .table td {
         font-size: 0.8rem;
@@ -209,15 +232,14 @@
   <div class="container">
     <h1>Emparejador de Mesas – MTG Commander</h1>
     <p><small>
-      Ingresa la lista de jugadores y el número de rondas. Se generarán mesas de 4 (a veces de 3),
-      intentando que <b>no se repitan demasiado los oponentes</b>. Luego marca el ganador o empate
-      para llevar la puntuación y boosters.
+      Ingresa la lista de jugadores y el número de rondas. Se generarán mesas de 4 jugadores,  
+      intentando que <b>no se repitan demasiado los oponentes</b>. Puedes marcar ganadores/empates y llevar puntos y boosters.
     </small></p>
 
     <div class="card">
       <div class="flex">
         <div>
-          <label for="playersInput">Jugadores <small>(uno por línea)</small></label>
+          <label for="playersInput">Jugadores <small>(uno por línea, en orden de inscripción)</small></label>
           <textarea id="playersInput" rows="8" placeholder="Ejemplo:
 Alice
 Bob
@@ -226,18 +248,27 @@ Diana
 Edu
 Fabián
 ..."></textarea>
-          <small>Recomendado entre 4 y 20 jugadores.</small>
+          <small>Solo se emparejarán jugadores en grupos completos de 4. Los últimos que sobren quedarán fuera y se mostrará un aviso.</small>
         </div>
+        <div>
+          <label for="lateInput">Mesa tardía (Ronda 1) <small>(opcional, exactamente 4 nombres)</small></label>
+          <textarea id="lateInput" rows="4" placeholder="Jugadores que suelen llegar tarde (deben estar en la lista de arriba)..."></textarea>
+          <small>Estos 4 jugarán juntos en la mesa tardía de la primera ronda, sin afectar al resto de mesas.</small>
+        </div>
+      </div>
+
+      <div class="flex" style="margin-top:0.5rem;">
         <div>
           <label for="roundsInput">Cantidad de rondas</label>
           <input type="number" id="roundsInput" min="1" max="12" value="3" />
-          <small>3–5 rondas funciona muy bien para pods de Commander.</small>
-          <br />
+          <div id="roundSuggestion" class="round-suggestion"></div>
+        </div>
+        <div>
           <button id="generateBtn">Generar emparejamientos</button>
-          <button id="resetBtn" class="btn-secondary">Resetear todo</button>
+          <button id="resetBtn" class="btn-secondary" type="button">Resetear todo</button>
           <p class="scores-note">
-            Algoritmo: intenta minimizar repeticiones de parejas en cada mesa, pero no es perfecto al 100%.  
-            Siempre puedes ajustar alguna mesa a mano (editando los nombres directamente en el texto de jugadores y regenerando).
+            Algoritmo: solo mesas de 4 jugadores.  
+            Si el número de jugadores (descontando la mesa tardía) no es múltiplo de 4, algunos quedarán fuera (los últimos de la lista).
           </p>
         </div>
       </div>
@@ -245,6 +276,7 @@ Fabián
 
     <div class="card">
       <h2>Rondas y mesas <span class="badge">Emparejamientos</span></h2>
+      <div id="extraPlayersMessage"></div>
       <div id="pairings"></div>
     </div>
 
@@ -268,21 +300,24 @@ Fabián
   </div>
 
   <script>
-    // ------------------ ESTADO GLOBAL & PERSISTENCIA ------------------
+    // --------------- ESTADO GLOBAL & PERSISTENCIA ---------------
 
     let globalRounds = [];   // [ [ [playersMesa1], [playersMesa2], ... ], ... ]
     let globalWinners = [];  // misma forma, guarda ganador o "__EMPATE__" o ""
-    const STORAGE_KEY = 'commander_pairings_v2';
+    let lastExtras = [];     // jugadores no emparejados
+    const STORAGE_KEY = 'commander_pairings_v3';
 
     function saveState() {
       try {
         const playersRaw = document.getElementById('playersInput').value;
         const rounds = document.getElementById('roundsInput').value;
+        const lateRaw = document.getElementById('lateInput').value;
         const data = {
           playersRaw,
           rounds: parseInt(rounds, 10),
           globalRounds,
-          globalWinners
+          globalWinners,
+          lateRaw
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       } catch (e) {
@@ -301,9 +336,13 @@ Fabián
         if (data.rounds) {
           document.getElementById('roundsInput').value = data.rounds;
         }
+        if (data.lateRaw !== undefined) {
+          document.getElementById('lateInput').value = data.lateRaw;
+        }
 
         globalRounds = data.globalRounds;
         globalWinners = data.globalWinners || globalRounds.map(r => r.map(() => ""));
+        updateRoundSuggestion();
         renderPairings();
         renderScores();
       } catch (e) {
@@ -311,7 +350,53 @@ Fabián
       }
     }
 
-    // ------------------ GENERACIÓN DE RONDAS ------------------
+    // --------------- UTILIDADES ---------------
+
+    function computeSuggestedRounds(numPlayers) {
+      if (numPlayers <= 8) return 3;
+      if (numPlayers <= 12) return 4;
+      return 5; // para grupos más grandes
+    }
+
+    function updateRoundSuggestion() {
+      const playersRaw = document.getElementById('playersInput').value
+        .split('\n')
+        .map(p => p.trim())
+        .filter(p => p.length > 0);
+      const uniquePlayers = Array.from(new Set(playersRaw));
+      const num = uniquePlayers.length;
+      const container = document.getElementById('roundSuggestion');
+      container.innerHTML = '';
+
+      if (num < 4) {
+        container.textContent = 'Necesitas al menos 4 jugadores para sugerir rondas.';
+        return;
+      }
+
+      const suggestion = computeSuggestedRounds(num);
+      const span = document.createElement('span');
+      span.textContent = `Sugerencia: ${suggestion} rondas para ${num} jugadores.`;
+      container.appendChild(span);
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = `Usar ${suggestion}`;
+      btn.style.marginLeft = '0.5rem';
+      btn.addEventListener('click', () => {
+        document.getElementById('roundsInput').value = suggestion;
+        saveState();
+      });
+      container.appendChild(btn);
+    }
+
+    document.getElementById('playersInput').addEventListener('input', () => {
+      updateRoundSuggestion();
+      saveState();
+    });
+    document.getElementById('roundsInput').addEventListener('input', saveState);
+    document.getElementById('lateInput').addEventListener('input', saveState);
+
+    // --------------- GENERACIÓN DE RONDAS ---------------
 
     document.getElementById('generateBtn').addEventListener('click', () => {
       const playersRaw = document.getElementById('playersInput').value
@@ -320,6 +405,10 @@ Fabián
         .filter(p => p.length > 0);
 
       const rounds = parseInt(document.getElementById('roundsInput').value, 10);
+      const lateRaw = document.getElementById('lateInput').value
+        .split('\n')
+        .map(p => p.trim())
+        .filter(p => p.length > 0);
 
       if (playersRaw.length < 4) {
         alert('Necesitas al menos 4 jugadores.');
@@ -330,12 +419,41 @@ Fabián
         return;
       }
 
-      const players = Array.from(new Set(playersRaw)); // quitar duplicados
+      const players = Array.from(new Set(playersRaw));
 
-      globalRounds = generateAllRounds(players, rounds);
-      globalWinners = globalRounds.map(round =>
-        round.map(() => "") // sin ganador al inicio
-      );
+      // Validar mesa tardía
+      let latePlayers = [];
+      if (lateRaw.length > 0) {
+        const lateUnique = Array.from(new Set(lateRaw));
+        if (lateUnique.length !== 4) {
+          alert('La mesa tardía debe tener exactamente 4 jugadores (o dejarse vacía).');
+          return;
+        }
+        for (const lp of lateUnique) {
+          if (!players.includes(lp)) {
+            alert(`El jugador "${lp}" de la mesa tardía no está en la lista principal.`);
+            return;
+          }
+        }
+        latePlayers = lateUnique;
+      }
+
+      // Calcular quiénes quedan fuera para mantener solo mesas de 4
+      // 1) excluir mesa tardía de la parte "regular"
+      const rest = players.filter(p => !latePlayers.includes(p));
+      const remainder = rest.length % 4;
+      lastExtras = [];
+
+      if (remainder !== 0) {
+        // los últimos en la lista de inscripción que no están en mesa tardía
+        const restOrdered = players.filter(p => !latePlayers.includes(p)); // ya lo tenemos
+        lastExtras = restOrdered.slice(restOrdered.length - remainder);
+      }
+
+      const eligiblePlayers = players.filter(p => !lastExtras.includes(p)); // incluye mesa tardía
+
+      globalRounds = generateAllRounds(eligiblePlayers, rounds, latePlayers);
+      globalWinners = globalRounds.map(round => round.map(() => ""));
 
       renderPairings();
       renderScores();
@@ -347,53 +465,58 @@ Fabián
 
       globalRounds = [];
       globalWinners = [];
+      lastExtras = [];
       document.getElementById('playersInput').value = '';
+      document.getElementById('lateInput').value = '';
       document.getElementById('roundsInput').value = 3;
       document.getElementById('pairings').innerHTML = '<p><small>Aún no se han generado rondas.</small></p>';
       document.getElementById('scores').innerHTML = '<p><small>No hay datos de puntuación.</small></p>';
       document.getElementById('leaguePot').textContent = '0';
+      document.getElementById('extraPlayersMessage').innerHTML = '';
+      document.getElementById('roundSuggestion').innerHTML = '';
       try {
         localStorage.removeItem(STORAGE_KEY);
       } catch (e) {}
     });
 
-    function generateAllRounds(players, rounds) {
+    function generateAllRounds(players, rounds, latePlayers) {
       const pairCounts = {}; // "A|B" -> veces que se enfrentaron
       const allRounds = [];
-
-      const getKey = (a, b) => {
-        return a < b ? a + '|' + b : b + '|' + a;
-      };
+      const getKey = (a, b) => (a < b ? a + '|' + b : b + '|' + a);
+      const lateSet = new Set(latePlayers || []);
 
       for (let r = 0; r < rounds; r++) {
-        let remaining = [...players];
-        remaining.sort(() => Math.random() - 0.5);
-
+        let remaining;
         const roundPods = [];
 
-        while (remaining.length > 0) {
-          let groupSize = 4;
-
-          if (remaining.length === 3) {
-            groupSize = 3;
-          } else if (remaining.length < 3) {
-            // Si quedan 1 o 2, se agregan a la última mesa
-            if (roundPods.length > 0) {
-              const lastPod = roundPods[roundPods.length - 1];
-              while (remaining.length > 0) {
-                lastPod.push(remaining.shift());
-              }
-            } else {
-              groupSize = remaining.length;
+        if (r === 0 && latePlayers && latePlayers.length === 4) {
+          // Mesa tardía fija
+          roundPods.push([...latePlayers]);
+          // actualizar pairCounts
+          for (let i = 0; i < latePlayers.length; i++) {
+            for (let j = i + 1; j < latePlayers.length; j++) {
+              const key = getKey(latePlayers[i], latePlayers[j]);
+              pairCounts[key] = (pairCounts[key] || 0) + 1;
             }
+          }
+          remaining = players.filter(p => !lateSet.has(p));
+        } else {
+          remaining = [...players];
+        }
+
+        remaining.sort(() => Math.random() - 0.5);
+
+        while (remaining.length > 0) {
+          if (remaining.length < 4) {
+            // Esto no debería pasar porque ya controlamos múltiplos de 4 (sin contar mesa tardía),
+            // pero por seguridad, rompemos el bucle.
             break;
           }
 
-          const bestGroup = findBestGroup(remaining, groupSize, pairCounts, getKey);
-
+          const bestGroup = findBestGroup(remaining, 4, pairCounts, getKey);
           roundPods.push(bestGroup);
 
-          // actualizar par enfrentado
+          // actualizar pairCounts
           for (let i = 0; i < bestGroup.length; i++) {
             for (let j = i + 1; j < bestGroup.length; j++) {
               const key = getKey(bestGroup[i], bestGroup[j]);
@@ -452,11 +575,22 @@ Fabián
       }
     }
 
-    // ------------------ RENDER DE EMPAREJAMIENTOS ------------------
+    // --------------- RENDER EMPAREJAMIENTOS ---------------
 
     function renderPairings() {
       const container = document.getElementById('pairings');
+      const extraContainer = document.getElementById('extraPlayersMessage');
       container.innerHTML = '';
+      extraContainer.innerHTML = '';
+
+      if (lastExtras && lastExtras.length > 0) {
+        const p = document.createElement('p');
+        p.className = 'warning';
+        p.textContent = 'Jugadores no emparejados (sobran para formar mesas de 4): ' +
+                        lastExtras.join(', ') +
+                        '. Agrega más jugadores o pide que algunos se retiren para que el número total (sin contar mesa tardía) sea múltiplo de 4.';
+        extraContainer.appendChild(p);
+      }
 
       if (!globalRounds.length) {
         container.innerHTML = '<p><small>Aún no se han generado rondas.</small></p>';
@@ -538,7 +672,7 @@ Fabián
       });
     }
 
-    // ------------------ TABLA DE PUNTUACIÓN & BOOSTERS ------------------
+    // --------------- TABLA DE PUNTUACIÓN & BOOSTERS ---------------
 
     function renderScores() {
       const container = document.getElementById('scores');
@@ -552,10 +686,9 @@ Fabián
         return;
       }
 
-      // stats por jugador
       const stats = {};
 
-      // Inicializar stats
+      // Inicializar
       globalRounds.forEach(roundPods => {
         roundPods.forEach(pod => {
           pod.forEach(player => {
@@ -574,24 +707,19 @@ Fabián
         });
       });
 
-      // Procesar resultados con la lógica nueva:
-      // Ganador: +1 punto, +1 booster
-      // Empate: 0 puntos para todos, +1 booster al pozo
-      // Derrota: 0 puntos
+      // Procesar resultados
       globalRounds.forEach((roundPods, rIndex) => {
         roundPods.forEach((pod, pIndex) => {
           const result = globalWinners[rIndex]?.[pIndex] || '';
           if (!result) return;
 
           if (result === '__EMPATE__') {
-            // Todos juegan una partida, nadie gana punto, 1 booster al pozo
             pod.forEach(player => {
               stats[player].games += 1;
-              stats[player].draws += 1; // puedes interpretarlo como "empate" para registro
+              stats[player].draws += 1;
             });
             leaguePot += 1;
           } else {
-            // Hay un ganador
             pod.forEach(player => {
               stats[player].games += 1;
               if (player === result) {
@@ -654,10 +782,11 @@ Fabián
       container.appendChild(table);
     }
 
-    // ------------------ INIT ------------------
+    // --------------- INIT ---------------
 
     document.addEventListener('DOMContentLoaded', () => {
       loadState();
+      updateRoundSuggestion();
       if (!globalRounds.length) {
         document.getElementById('pairings').innerHTML = '<p><small>Aún no se han generado rondas.</small></p>';
         document.getElementById('scores').innerHTML = '<p><small>No hay datos de puntuación.</small></p>';
